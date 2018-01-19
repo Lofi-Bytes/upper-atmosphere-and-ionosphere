@@ -1,0 +1,23 @@
+!    -*- f90 -*-
+! Note: the context of this file is case sensitive.
+
+python module iono ! in 
+    interface  ! in :iono
+        subroutine nout(n0,t,z,h,n) ! in :iono:iono.f90
+            real intent(in) :: n0
+            real dimension(1000),intent(in) :: t
+            real dimension(1000),intent(in) :: z
+            real dimension(1000),intent(in) :: h
+            real dimension(1000),intent(out) :: n
+        end subroutine nout
+        subroutine col_nout(n,h,z,col_n) ! in :iono:iono.f90
+            real dimension(1000),intent(in) :: n
+            real dimension(1000),intent(in) :: h
+            real dimension(1000),intent(in) :: z
+            real dimension(1000),intent(out) :: col_n
+        end subroutine col_nout
+    end interface 
+end python module iono
+
+! This file was auto-generated with f2py (version:2).
+! See http://cens.ioc.ee/projects/f2py2e/

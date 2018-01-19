@@ -1,9 +1,4 @@
-# -*- coding: utf-8 -*-
-
-"""
-Created on Mon Jan 23 19:41:05 2012
-@author: Jonathan Nickerson
-"""
+#!/usr/bin/env python
 
 # Importing everything python needs in order to be smart.
 import numpy as np                                      # Numpy tells python how to work with numbers.
@@ -97,7 +92,11 @@ def read_solar_flux():
     # are presented in units of [Mb]; to transform them to [cm^2] multiply by 1E-18.
     # Multiply by 1E-4 to convert from [cm^2] to [m^2].
     #-----------------------------------------------------------------------------------------
-    data *= 1E-18*1E-4
+    #data *= 1E-18*1E-4
+    for s in neutrals:
+        data[s] *= 1E-18*1E-4
+    for i in ions:
+        data[i] *=  1E-18*1E-4
     #-----------------------------------------------------------------------------------------
     return data
 
@@ -109,7 +108,7 @@ def calculate_number_densities(n, T, z, H, n_base):
     # density as a function of z, n(z), in [m^-3]. 
     #-----------------------------------------------------------------------------------------
     for s in neutrals:
-        n[s] *= 0
+        #n[s] *= 0
         n[s][0] = n_base[s]
         for i in range(1, 1000):
             n[s][i] = (n[s][i-1]*T[i-1])/(T[i])*np.exp(-(z[i]-z[i-1])/H[s][i])        
@@ -127,7 +126,7 @@ def calculate_column_densities(col_n, n, H, z):
     # excluding the value that we have already stored.
     #-----------------------------------------------------------------------------------------
     for s in neutrals:
-        col_n[s] *= 0
+        #col_n[s] *= 0
         col_n[s][999] = n[s][999]*H[s][999]    
         for i in reversed(range(0, 999)):
             col_n[s][i] = n[s][i]*(z[i+1] - z[i]) + col_n[s][i+1]    
@@ -161,7 +160,7 @@ def combine_optical_depths(sumtau, tau, sza):
         sumtau += tau[s]*(1/sza)
     return sumtau
 
-def calculate_inensity(I, I_inf, sumtau):
+def calculate_intensity(I, I_inf, sumtau):
     #-----------------------------------------------------------------------------------------
     # Calculating the intensity as it varies with depth from the top of the 
     # atmosphere down.
@@ -185,14 +184,14 @@ def calculate_energy_dissipation(Q, eps, n, data, I, e):
             Q[s][:] += eps*n[s][:]*data[s][j]*I[:,j]*e[j]
     return Q
 
-def combine_energy_dissipation(sumQ, Q):
+def combine_energy_dissipation(sumQ, Q, Q_nr, Q_r, Q_en):
     #-----------------------------------------------------------------------------------------
     # To calculate the TOTAL heting over all wavelengths for all species we must sum
     # all of our Q's together.
     #-----------------------------------------------------------------------------------------
     sumQ *= 0
     for s in neutrals:
-        sumQ += Q[s]
+        sumQ += Q[s] #- Q_nr - Q_r - Q_en
     return sumQ
 
 def T_new(T, sumQ, dz, lam_n, dt, RHO, Cp):
@@ -235,17 +234,19 @@ def T_new(T, sumQ, dz, lam_n, dt, RHO, Cp):
     #plt.plot(T,z*1E-3)
     return T
 
-def Te(Te, sumQ, dz, eps, eps_e, ni_sum, N_tot):
+def Te(Te, sumQ, dz, eps, eps_e, ni_sum, N_tot, Q_ei, Q_en, Lr_N2, Lr_O2, Lv_O2, Lf_O):
     #-----------------------------------------------------------------------------------------
     # Electron temperature    
     # Defineing the thermal conduction in [W/(m*K)].
     #-----------------------------------------------------------------------------------------
-    Qe = (sumQ/eps) * eps_e
+    Qe = (sumQ/eps) * eps_e - Lf_O - Lr_N2 - Lr_O2 + Q_en + Q_ei - Lv_O2
+    if np.all(Qe) < np.all(-0.01*sumQ):
+        Qe = -0.01*sumQ
     denom = 1 + 3.22E4 * (np.power(Te,2)/ni_sum) * N_tot * 1E-16
     for i in range (1000):
         if denom[i] > 10:
             denom[i] = 10
-    lam_e = ((7.7E5*np.power(Te, 5.0/2.0))/denom) * (1.60217646E-19 * 1.0E2)   # Converting from (eV/cm^3) to (J/m^3)
+    lam_e = ((7.7E5*np.power(Te, 5.0/2.0))/denom) * (1.60217646E-19 * 1.0E2)   # Converting from (eV/cm) to (J/m)
     #-----------------------------------------------------------------------------------------    
     # Setting up the coeficients and boundary conditions of the tri diagonal matrix.
     #-----------------------------------------------------------------------------------------
@@ -270,8 +271,44 @@ def Te(Te, sumQ, dz, eps, eps_e, ni_sum, N_tot):
     #-----------------------------------------------------------------------------------------
     Te_new = np.linalg.solve(coef, D)
 #        plt.plot(T,z*1E-3)
-    Te = 0.5*(Te_new + Te)
+    Te = 0.05*Te_new + Te*0.95
     return Te
+
+def Ti(Ti, sumQ, dz, eps, eps_i, ni_sum, N_tot, Q_ei, Q_nr, Q_r):
+    #-----------------------------------------------------------------------------------------
+    # Electron temperature    
+    # Defineing the thermal conduction in [W/(m*K)].
+    #-----------------------------------------------------------------------------------------
+    Qi = (sumQ/eps) * eps_i - Q_ei + Q_nr + Q_r
+    if np.all(Qi) < -np.all(0.0001*sumQ):
+        Qi = -0.0001*sumQ
+    lam_i = ((4.6E4*np.power(Ti, 5.0/2.0))/np.power(16,0.5)) * (1.60217646E-19 * 1.0E2)   # Converting from (eV/cm) to (J/m)
+    #-----------------------------------------------------------------------------------------    
+    # Setting up the coeficients and boundary conditions of the tri diagonal matrix.
+    #-----------------------------------------------------------------------------------------
+    A = np.zeros(999.0) + 1.0
+    B = np.zeros(1000.0) - 2.0  ;  B[0] = -1.0  ;  B[999] = -1.0
+    C = np.zeros(999.0) + 1.0  ;  C[0] = 0.0
+    D = np.zeros(1000.0) - (Qi*np.power(dz,2.0))/lam_i
+    D[0] = -200.0
+    D[999] = 0.0
+    #-----------------------------------------------------------------------------------------    
+    # Building the matrix
+    #-----------------------------------------------------------------------------------------
+    coef = np.zeros([1000,1000])
+    for i in range(999):
+        coef[i+1,i] = A[i]
+    for i in range(1000):
+        coef[i,i] = B[i]
+    for i in range(999):
+        coef[i,i+1] = C[i]
+    #-----------------------------------------------------------------------------------------    
+    # Solving the matrix equation.
+    #-----------------------------------------------------------------------------------------
+    Ti_new = np.linalg.solve(coef, D)
+#        plt.plot(T,z*1E-3)
+    Ti = 0.05*Ti_new + Ti*0.95
+    return Ti
 
 def ion_production_rate(Ps, n, I, data, zsize):
     #-----------------------------------------------------------------------------------------
