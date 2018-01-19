@@ -26,9 +26,11 @@ ions = ['O+', 'N+', 'O2+', 'N2+']
 #***********************************************************************
 
 def calculate_average_scale_height(H_ave, n_base, m, H, rho_tot):    
+    #-----------------------------------------------------------------------------------------
     # Calculating an average (mass density weighted) scale height for the 
     # thermosphere. Instructing python to assign the average scale height to all of 
     # the species from the base, z(0), up to an altitude of 120km, z(29).
+    #-----------------------------------------------------------------------------------------
     H_ave *= 0
     for i in range (0, 29):
         H_ave[i] = (n_base['O']*m['O']*H['O'][i] + 
@@ -59,7 +61,7 @@ def read_solar_flux():
     string into the dictionary called data, splits that line up into individual 
     'words/values', and changes it to type float.  
     """      
-    f = open("/Users/Jonathan/Dropbox/Jonathan School/Winter 2012/AOSS 495 Ionospheres/Ionospheres Assignments/solar_flux.txt", 
+    f = open("/Users/jsni/Desktop/Ionospheres Assignments/solar_flux.txt", 
              'r')
     lines=f.readlines()
     var={'lower':'Wavelength Lower (A)\n',
@@ -71,41 +73,41 @@ def read_solar_flux():
          'N2_Np':'N2->N+\n',
          'O2':'O2 abs\n',
          'O2+':'O2->O2+\n',
-         'O2_Op':'O2->O+\n',
+         'O2_O+':'O2->O+\n',
          'O4S':'O->O+(4S)\n',
          'O2D':'O->O+(2D)\n',
          'O2P':'O->O+(2P)\n',
          'O':'O abs\n',
-         'N_Np':'N->N+\n',
+         'N+':'N->N+\n',
          'N':'N abs\n'}
     data={}
     for k in var.keys():
         line=lines[1+lines.index(var[k])]
         data[k]=np.array(line.split(), dtype=float)
-    
+    #-----------------------------------------------------------------------------------------    
     # Assigning an empty array for NO as a place holder.
+    #-----------------------------------------------------------------------------------------
     data['NO'] = np.zeros(37)
-    
+    #-----------------------------------------------------------------------------------------    
     # Summing up the various O+ souces to get the total amount of O+
-    data['O+'] = data['O4S'] + 2*data['O2_Op'] + data['O2D'] + data['O2P']
-    
-    # Summing up the various N+ souces to get the total amount of N+
-    data['N+'] = 2*data['N2_Np'] + data['N_Np']
-    
+    #-----------------------------------------------------------------------------------------
+    data['O+'] = data['O4S'] + data['O2D'] + data['O2P']
+    #-----------------------------------------------------------------------------------------    
     # The absorption cross section values for each species in the table 
     # are presented in units of [Mb]; to transform them to [cm^2] multiply by 1E-18.
     # Multiply by 1E-4 to convert from [cm^2] to [m^2].
-    for s in neutrals:
-        data[s] *= 1E-18*1E-4
-    for i in ions:
-        data[i] *=  1E-18*1E-4
+    #-----------------------------------------------------------------------------------------
+    data *= 1E-18*1E-4
+    #-----------------------------------------------------------------------------------------
     return data
 
 def calculate_number_densities(n, T, z, H, n_base):
+    #-----------------------------------------------------------------------------------------
     # Setting the first value in those arrays to the corresponding initial number densities.
     # Calculating the value of number density for each species at every step in 
     # altitude and storing that value. In other words we are calculating number 
     # density as a function of z, n(z), in [m^-3]. 
+    #-----------------------------------------------------------------------------------------
     for s in neutrals:
         n[s] *= 0
         n[s][0] = n_base[s]
@@ -114,6 +116,7 @@ def calculate_number_densities(n, T, z, H, n_base):
     return n
 
 def calculate_column_densities(col_n, n, H, z):
+    #-----------------------------------------------------------------------------------------
     # Integrating the number densities multiplied by the difference in altitude 
     # from the top of the atmosphere down. Then storing the values of the integrals 
     # at each altitude. This is how to calculate the column density of each species.
@@ -122,6 +125,7 @@ def calculate_column_densities(col_n, n, H, z):
     # of the atmosphere. We use this as our initual value to get the integration 
     # started. We then iterate in reverse over the range of values in our matrix 
     # excluding the value that we have already stored.
+    #-----------------------------------------------------------------------------------------
     for s in neutrals:
         col_n[s] *= 0
         col_n[s][999] = n[s][999]*H[s][999]    
@@ -130,6 +134,7 @@ def calculate_column_densities(col_n, n, H, z):
     return col_n
 
 def calculate_optical_depth(tau, data, col_n, zsize):
+    #-----------------------------------------------------------------------------------------
     # Calculating the optical depth as a function of altitude, wavelength, and 
     # zenith angle. In our model we will assume zenith angle of 0 (ie the sun is 
     # directly overhead). This simplifies the calculation since we won't have to 
@@ -137,59 +142,72 @@ def calculate_optical_depth(tau, data, col_n, zsize):
     # function of altitude and wavelength. We muse set the size of the array being
     # cautious since the wavelength arrays and number density arrays are of 
     # different sizes.
+    #-----------------------------------------------------------------------------------------
     for s in neutrals:
         tau[s] *= 0
-        for j in range(0,37):
-            tau[s][0:zsize,j] = data[s][j]*col_n[s][0:zsize]
+        tau[s] = np.dot(col_n[s].reshape(1000,1), data[s].reshape(1,37))
     return tau
 
 def combine_optical_depths(sumtau, tau, sza):
+    #-----------------------------------------------------------------------------------------
     # To get an intensity profile for the atmosphere as a whole (all species) we sum 
     # all of the optical depths together. In othr words this will give us the true 
     # optical depth for each of the 37 frequencies as they penetrate into an atmosphere 
     # of mixed species. Whereas before we were calculating how each species individually 
     # affects each wavelength.
+    #-----------------------------------------------------------------------------------------
     sumtau *= 0
     for s in neutrals:
         sumtau += tau[s]*(1/sza)
     return sumtau
 
-def calculate_inensity(I, I_inf, sumtau, zsize):
+def calculate_inensity(I, I_inf, sumtau):
+    #-----------------------------------------------------------------------------------------
     # Calculating the intensity as it varies with depth from the top of the 
     # atmosphere down.
+    #-----------------------------------------------------------------------------------------
     I *= 0
     for j in range(0,37):
-        I[0:zsize,j] = I_inf[j]*np.exp(-sumtau[0:zsize,j])
+        I[:,j] = I_inf[j]*np.exp(-sumtau[:,j])
+    #I = np.dot(I_inf.reshape(1,37), np.exp(-sumtau.reshape(37,1000)))
+    #I = np.mat(I_inf.reshape(1,37)) * np.mat(np.exp(-sumtau.reshape(37,1000)))
     return I
 
-def calculate_energy_dissipation(Q, eps, n, data, I, e, zsize):
+def calculate_energy_dissipation(Q, eps, n, data, I, e):
+    #-----------------------------------------------------------------------------------------
     # All of the work we do calculating optical depth and intensity is so that we 
     # can calculate the energy dissipation (heating) as a function of altitude in units 
     # of [watts/m^3]. Playing the same game as before: 
+    #-----------------------------------------------------------------------------------------
     for s in neutrals:
         Q[s] *= 0
         for j in range(0, 37):
-            Q[s][0:zsize] += eps*n[s][0:zsize]*data[s][j]*I[0:zsize,j]*e[j]
+            Q[s][:] += eps*n[s][:]*data[s][j]*I[:,j]*e[j]
     return Q
 
 def combine_energy_dissipation(sumQ, Q):
+    #-----------------------------------------------------------------------------------------
     # To calculate the TOTAL heting over all wavelengths for all species we must sum
     # all of our Q's together.
+    #-----------------------------------------------------------------------------------------
     sumQ *= 0
     for s in neutrals:
         sumQ += Q[s]
     return sumQ
 
 def T_new(T, sumQ, dz, lam_n, dt, RHO, Cp):
-    
+    #-----------------------------------------------------------------------------------------
+    # Ion temperture
     # Defineing the change in thermal conduction in [W/(m*K)].
+    #-----------------------------------------------------------------------------------------
     dlam_n = np.zeros(999.0)
     for i in range(1, 998):
         dlam_n[i] = dlam_n[i + 1] - dlam_n[i - 1]
         dlam_n[0] = dlam_n[1]
         dlam_n[998] = dlam_n[997]
-    
+    #-----------------------------------------------------------------------------------------    
     # Setting up the coeficients and boundary conditions of the tri diagonal matrix.
+    #-----------------------------------------------------------------------------------------
     A = np.zeros(999.0) + 1.0 
     for i in range(999):
         A[i] += dlam_n[i]/(4.0*lam_n[i])
@@ -200,8 +218,9 @@ def T_new(T, sumQ, dz, lam_n, dt, RHO, Cp):
         C[i] -= dlam_n[i]/(4.0*lam_n[i])
     C[0] = 0.0
     D = np.zeros(1000.0) - (np.power(dz,2)/lam_n)*(T*(RHO*Cp/dt) + sumQ) ; D[0] = -200.0 ; D[999] = 0.0
-    
+    #-----------------------------------------------------------------------------------------    
     # Building the matrix
+    #-----------------------------------------------------------------------------------------
     coef = np.zeros([1000.0, 1000.0])
     for i in range(999):
         coef[i+1,i] = A[i]
@@ -209,14 +228,55 @@ def T_new(T, sumQ, dz, lam_n, dt, RHO, Cp):
         coef[i,i] = B[i]
     for i in range(999):
         coef[i,i+1] = C[i]
-    
+    #-----------------------------------------------------------------------------------------    
     # Solving the matrix equation.
+    #-----------------------------------------------------------------------------------------
     T = np.linalg.solve(coef, D)
     #plt.plot(T,z*1E-3)
     return T
 
+def Te(Te, sumQ, dz, eps, eps_e, ni_sum, N_tot):
+    #-----------------------------------------------------------------------------------------
+    # Electron temperature    
+    # Defineing the thermal conduction in [W/(m*K)].
+    #-----------------------------------------------------------------------------------------
+    Qe = (sumQ/eps) * eps_e
+    denom = 1 + 3.22E4 * (np.power(Te,2)/ni_sum) * N_tot * 1E-16
+    for i in range (1000):
+        if denom[i] > 10:
+            denom[i] = 10
+    lam_e = ((7.7E5*np.power(Te, 5.0/2.0))/denom) * (1.60217646E-19 * 1.0E2)   # Converting from (eV/cm^3) to (J/m^3)
+    #-----------------------------------------------------------------------------------------    
+    # Setting up the coeficients and boundary conditions of the tri diagonal matrix.
+    #-----------------------------------------------------------------------------------------
+    A = np.zeros(999.0) + 1.0
+    B = np.zeros(1000.0) - 2.0  ;  B[0] = -1.0  ;  B[999] = -1.0
+    C = np.zeros(999.0) + 1.0  ;  C[0] = 0.0
+    D = np.zeros(1000.0) - (Qe*np.power(dz,2.0))/lam_e
+    D[0] = -200.0
+    D[999] = 0.0
+    #-----------------------------------------------------------------------------------------    
+    # Building the matrix
+    #-----------------------------------------------------------------------------------------
+    coef = np.zeros([1000,1000])
+    for i in range(999):
+        coef[i+1,i] = A[i]
+    for i in range(1000):
+        coef[i,i] = B[i]
+    for i in range(999):
+        coef[i,i+1] = C[i]
+    #-----------------------------------------------------------------------------------------    
+    # Solving the matrix equation.
+    #-----------------------------------------------------------------------------------------
+    Te_new = np.linalg.solve(coef, D)
+#        plt.plot(T,z*1E-3)
+    Te = 0.5*(Te_new + Te)
+    return Te
+
 def ion_production_rate(Ps, n, I, data, zsize):
+    #-----------------------------------------------------------------------------------------
     # Creating a new number density of the proper key type so python doesn't shit itself.
+    #-----------------------------------------------------------------------------------------
     nn = {}
     nn['O+'] = n['O']
     nn['N+'] = n['N']
@@ -225,12 +285,13 @@ def ion_production_rate(Ps, n, I, data, zsize):
     for s in ions:
         Ps[s] *= 0
         for j in range(0, 37):
-            Ps[s][0:zsize] += nn[s][0:zsize]*I[0:zsize,j]*data[s][j]
+            Ps[s][:] += nn[s][:]*I[:,j]*data[s][j]
     return Ps
     
 def calculate_ion_number_densities(ni, source, RM, dt):
+    #-----------------------------------------------------------------------------------------
     # Calculating the ion number densities as they vary in time.
+    #-----------------------------------------------------------------------------------------
     for s in ions:
-        ni[s] *= 0
         ni[s] = (ni[s] + source[s]*dt)/(1 + RM[s]*dt)
     return ni
