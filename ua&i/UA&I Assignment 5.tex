@@ -2,7 +2,7 @@
 \usepackage[latin1]{inputenc}
 \usepackage{geometry}                % See geometry.pdf to learn the layout options. There are lots.
 \geometry{letterpaper}				% Activate for for rotated page geometry
-%\geometry{landscape} 
+%\geometry{landscape}
 %\usepackage[parfill]{parskip}		% Activate to begin paragraphs with an empty line rather than an indent
 \usepackage{graphicx}
 \usepackage{epstopdf}
@@ -20,7 +20,7 @@
 
 \begin{document}
 \title{Upper Atmosphere and Ionosphere Assignment 5}
-\author{Jonathan Nickerson}
+\author{Jillian S. Estrella}
 \date{April 27, 2012}
 \maketitle
 
@@ -108,16 +108,16 @@ T_{r}= \frac{T_{i} + T_{n}}{2}
 Chapter 9 in Schunk \& Nagy provides electron cooling rates. I calculated these values for the N$_{2}$ rotation, O$_{2}$ rotation, O$_{2}$ vibration, and O fine structure contributions. It should be noted that I attempted to calculate the N$_{2}$ vibration contribution with no success. The above mentioned equations are
 \\
 
-\noindent N$_{2}$ rotation 
+\noindent N$_{2}$ rotation
 
 \begin{equation}
-L_{e}(N_{2})=\frac{3.5 \times 10^{-14}n_{e}n(N_{2})(T_{e}-T_{n})}{T_{e}^{1/2}} 
+L_{e}(N_{2})=\frac{3.5 \times 10^{-14}n_{e}n(N_{2})(T_{e}-T_{n})}{T_{e}^{1/2}}
 \end{equation}
 
 \noindent O$_{2}$ rotation
 
 \begin {equation}
-L_{e}(O_{2})=\frac{5.2 \times 10^{-15}n_{e}n(O_{2})(T_{e}-T_{n})}{T_{e}^{1/2}} 
+L_{e}(O_{2})=\frac{5.2 \times 10^{-15}n_{e}n(O_{2})(T_{e}-T_{n})}{T_{e}^{1/2}}
 \end {equation}
 
 \noindent O$_{2}$ vibration
@@ -130,21 +130,21 @@ L_{e}(O_{2})=n_{e}n(O_{2})Q(T_{e})\{1-exp{[2239(T_{e}^{-1}-T_{n}^{-1})]}
 
 \begin{equation}
 \begin{split}
-\log _{10} [Q(T_{e})] =& \left( -19.9171 + 0.0267T_{e} - 3.9960 \times 10^{-5}T_{e}^{2} \right. \\ & \left. 
-+ 3.5187 \times 10^{-8}T_{e}^{3} - 1.9228 \times 10^{-11}T_{e}^{4} \right. \\ & \left. 
-+ 6.6865 \times 10^{-15}T_{e}^{5} - 1.4791 \times 10^{-18}T_{e}^{6} \right. \\ & \left. 
-+ 2.0127 \times 10^{-22}T_{e}^{7} - 1.5346 \times 10^{-26}T_{e}^{8} \right. \\ & \left. 
+\log _{10} [Q(T_{e})] =& \left( -19.9171 + 0.0267T_{e} - 3.9960 \times 10^{-5}T_{e}^{2} \right. \\ & \left.
++ 3.5187 \times 10^{-8}T_{e}^{3} - 1.9228 \times 10^{-11}T_{e}^{4} \right. \\ & \left.
++ 6.6865 \times 10^{-15}T_{e}^{5} - 1.4791 \times 10^{-18}T_{e}^{6} \right. \\ & \left.
++ 2.0127 \times 10^{-22}T_{e}^{7} - 1.5346 \times 10^{-26}T_{e}^{8} \right. \\ & \left.
 + 5.0148 \times 10^{-31}T_{e}^{9} \right)
 \end{split}
 \end{equation}
 
 
-\noindent Oxygen fine structure 
+\noindent Oxygen fine structure
 
 \begin{equation}
 \begin{split}
-L_{e}(O) =& n_{e} n(O) D^{-1} \left( S_{10} \lbrace 1 - exp{[98.9(T_{e}^{-1} - T_{n}^{-1})]} \rbrace \right. \\ & \left. 
-+ S_{20} \lbrace 1 - exp[326.6(T_{e}^{-1} - T_{n}^{-1})] \rbrace \right. \\ & \left. 
+L_{e}(O) =& n_{e} n(O) D^{-1} \left( S_{10} \lbrace 1 - exp{[98.9(T_{e}^{-1} - T_{n}^{-1})]} \rbrace \right. \\ & \left.
++ S_{20} \lbrace 1 - exp[326.6(T_{e}^{-1} - T_{n}^{-1})] \rbrace \right. \\ & \left.
 + S_{21} \lbrace 1-exp[227.7(T_{e}^{-1} - T_{n}^{-1})] \rbrace \right)
 \end{split}
 \end{equation}
@@ -174,19 +174,19 @@ Upon calculating all quantities we add or subtract these terms from the already 
 The following plots are provided with captions discussing the results.
 \begin{figure}[H]
 	\centering
-		\includegraphics[width=0.99\textwidth]{./figures/B/Ion_Interactions_vs_Altitude.eps}
+		\includegraphics[width=0.99\textwidth]{../Figures/B/Ion_Interactions_vs_Altitude.eps}
 	\caption{This is a plot of the Ion interactions vs Altitude. I don't have much to say about this because I have no physical intuition regarding what the behavior of these loss terms should look like.}
 	\label{fig:n1}
 \end{figure}
 \begin{figure}[H]
 	\centering
-		\includegraphics[width=0.99\textwidth]{./figures/B/Electron_Cooling_Rates_vs_Altitude.eps}
+		\includegraphics[width=0.99\textwidth]{../Figures/B/Electron_Cooling_Rates_vs_Altitude.eps}
 	\caption{These are the electron coolins rates. Again I don't have much to say about this because I have no physical intuition regarding what the behavior of these loss terms should look like. I find it interesting the the L$_{O2}$ term is so small compared to the rest. But this could just mean that the term isn't very important with respect to cooling.}
 	\label{fig:n2}
 \end{figure}
 \begin{figure}[H]
 	\centering
-		\includegraphics[width=0.99\textwidth]{./figures/B/T_max_vs_time.eps}
+		\includegraphics[width=0.99\textwidth]{../Figures/B/T_max_vs_time.eps}
 	\caption{This is a plot of Maximum Temperature vs Time. I believe that this plot is the most important regarding my results. As you can see I ran my model over a period of two days in an attempt to flush out any numerical quirks. For some reason the ion temperature is not behaving very well. This is clearly due to a numerics problem.}
 	\label{fig:n3}
 \end{figure}
